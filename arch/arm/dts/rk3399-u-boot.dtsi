@@ -64,9 +64,13 @@
 };
 
 &vopb {
+	/delete-property/ assigned-clocks;
+	/delete-property/ assigned-clock-rates;
 	u-boot,dm-pre-reloc;
 };
 
 &vopl {
+	/delete-property/ assigned-clocks;
+	/delete-property/ assigned-clock-rates;
 	u-boot,dm-pre-reloc;
 };
