@@ -85,6 +85,10 @@
 #define SIFIVE_SPI_IP_TXWM               BIT(0)
 #define SIFIVE_SPI_IP_RXWM               BIT(1)
 
+#define SPI_NBITS_SINGLE		BIT(0)
+#define SPI_NBITS_DUAL			BIT(1)
+#define SPI_NBITS_QUAD			BIT(2)
+
 struct sifive_spi {
 	void		*regs;		/* base address of the registers */
 	u32		fifo_depth;
@@ -127,7 +131,7 @@ static void sifive_spi_clear_cs(struct sifive_spi *spi)
 }
 
 static void sifive_spi_prep_transfer(struct sifive_spi *spi,
-				     bool is_rx_xfer,
+				     unsigned int bitlen, bool is_rx_xfer,
 				     struct dm_spi_slave_platdata *slave)
 {
 	u32 cr;
@@ -146,12 +150,17 @@ static void sifive_spi_prep_transfer(struct sifive_spi *spi,
 
 	/* Number of wires ? */
 	cr &= ~SIFIVE_SPI_FMT_PROTO_MASK;
-	if ((slave->mode & SPI_TX_QUAD) || (slave->mode & SPI_RX_QUAD))
+	switch (bitlen) {
+	case SPI_NBITS_QUAD:
 		cr |= SIFIVE_SPI_FMT_PROTO_QUAD;
-	else if ((slave->mode & SPI_TX_DUAL) || (slave->mode & SPI_RX_DUAL))
+		break;
+	case SPI_NBITS_DUAL:
 		cr |= SIFIVE_SPI_FMT_PROTO_DUAL;
-	else
+		break;
+	default:
 		cr |= SIFIVE_SPI_FMT_PROTO_SINGLE;
+		break;
+	}
 
 	/* SPI direction in/out ? */
 	cr &= ~SIFIVE_SPI_FMT_DIR;
@@ -205,7 +214,7 @@ static int sifive_spi_xfer(struct udevice *dev, unsigned int bitlen,
 			return ret;
 	}
 
-	sifive_spi_prep_transfer(spi, true, slave);
+	sifive_spi_prep_transfer(spi, bitlen, true, slave);
 
 	remaining_len = bitlen / 8;
 
