@@ -32,7 +32,8 @@ out:
 }
 #endif
 
-#if defined(CONFIG_TPL_BUILD)
+#if defined(CONFIG_TPL_BUILD) || \
+	(!defined(CONFIG_TPL) && defined(CONFIG_SPL_BUILD))
 
 #define PMUGRF_BASE     0xff320000
 #define GPIO0_BASE      0xff720000
