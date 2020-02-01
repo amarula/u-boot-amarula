@@ -43,7 +43,7 @@ config FASTBOOT_BUF_ADDR
 
 config FASTBOOT_BUF_SIZE
 	hex "Define FASTBOOT buffer size"
-	default 0x8000000 if ARCH_ROCKCHIP
+	default 0x4000000 if ARCH_ROCKCHIP
 	default 0x6000000 if ARCH_ZYNQMP
 	default 0x2000000 if ARCH_SUNXI
 	default 0x8192 if SANDBOX
