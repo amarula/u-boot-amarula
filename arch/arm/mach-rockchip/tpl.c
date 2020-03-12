@@ -49,8 +49,6 @@ void board_init_f(ulong dummy)
 	struct udevice *dev;
 	int ret;
 
-	board_early_init_f();
-
 #if defined(CONFIG_DEBUG_UART) && defined(CONFIG_TPL_SERIAL_SUPPORT)
 	/*
 	 * Debug UART can be used from here if required:
@@ -61,10 +59,6 @@ void board_init_f(ulong dummy)
 	 * printascii("string");
 	 */
 	debug_uart_init();
-#ifdef CONFIG_TPL_BANNER_PRINT
-	printascii("\nU-Boot TPL " PLAIN_VERSION " (" U_BOOT_DATE " - " \
-				U_BOOT_TIME ")\n");
-#endif
 #endif
 	ret = spl_early_init();
 	if (ret) {
@@ -76,6 +70,11 @@ void board_init_f(ulong dummy)
 	rockchip_stimer_init();
 	/* Init ARM arch timer in arch/arm/cpu/ */
 	timer_init();
+	board_early_init_f();
+#ifdef CONFIG_TPL_BANNER_PRINT
+	printascii("\nU-Boot TPL " PLAIN_VERSION " (" U_BOOT_DATE " - " \
+				U_BOOT_TIME ")\n");
+#endif
 
 	ret = uclass_get_device(UCLASS_RAM, 0, &dev);
 	if (ret) {
