@@ -34,11 +34,12 @@ out:
 
 #if defined(CONFIG_TPL_BUILD) || \
 	(!defined(CONFIG_TPL) && defined(CONFIG_SPL_BUILD))
+#include <asm/arch-rockchip/cru.h>
 
 #define PMUGRF_BASE     0xff320000
 #define GPIO0_BASE      0xff720000
 
-int board_early_init_f(void)
+void board_early_led_setup(void)
 {
 	struct rockchip_gpio_regs * const gpio0 = (void *)GPIO0_BASE;
 	struct rk3399_pmugrf_regs * const pmugrf = (void *)PMUGRF_BASE;
@@ -56,7 +57,15 @@ int board_early_init_f(void)
 
 	spl_gpio_output(gpio0, GPIO(BANK_A, 2), 0);
 	spl_gpio_output(gpio0, GPIO(BANK_B, 5), 1);
+}
+
+int board_early_init_f(void)
+{
+	/* Set the leds only during POR */
+	if (!strcmp(get_reset_cause(), "POR"))
+		board_early_led_setup();
 
 	return 0;
 }
+
 #endif
