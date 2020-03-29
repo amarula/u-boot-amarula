@@ -49,6 +49,7 @@ if MMC
 config MMC_SPI
 	bool "Support for SPI-based MMC controller"
 	depends on DM_MMC && DM_SPI
+	select SPL_CRC7_SUPPORT if SPL
 	help
 	  This selects SPI-based MMC controllers.
 	  If you have an MMC controller on a SPI bus, say Y here.

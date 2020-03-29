@@ -401,6 +401,12 @@ config SPL_CRC32_SUPPORT
 	  for detected accidental image corruption. For secure applications you
 	  should consider SHA1 or SHA256.
 
+config SPL_CRC7_SUPPORT
+	bool "Support CRC7"
+	help
+	  Enable CRC7 hashing for drivers which are using in SPL.
+	  This is a 32-bit checksum value that can be used to verify images.
+
 config SPL_MD5_SUPPORT
 	bool "Support MD5"
 	depends on SPL_FIT
