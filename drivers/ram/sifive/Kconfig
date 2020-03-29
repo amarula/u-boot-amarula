@@ -1,0 +1,8 @@
+config SIFIVE_FU540_DDR
+	bool "SiFive FU540 DDR driver"
+	depends on DM && OF_CONTROL
+	select RAM
+	select SPL_RAM if SPL
+	select SIFIVE_DDR
+	help
+	  This enables DDR support for the platforms based on SiFive FU540 SoC.
