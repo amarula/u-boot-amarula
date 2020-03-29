@@ -32,4 +32,7 @@ struct sifive_gpio_platdata {
 	void *base;     /* address of registers in physical memory */
 };
 
+#define SIFIVE_GENERIC_GPIO_NR(port, index) \
+		(((port) * NR_GPIOS) + ((index) & (NR_GPIOS - 1)))
+
 #endif /* _GPIO_SIFIVE_H */
