@@ -4,3 +4,19 @@
  */
 
 #include "fu540-c000-u-boot.dtsi"
+
+/ {
+	hfclk {
+		u-boot,dm-spl;
+	};
+
+	rtcclk {
+		u-boot,dm-spl;
+	};
+};
+
+&qspi2 {
+	mmc@0 {
+		u-boot,dm-spl;
+	};
+};
