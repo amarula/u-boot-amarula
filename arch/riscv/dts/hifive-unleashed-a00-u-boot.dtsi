@@ -4,6 +4,7 @@
  */
 
 #include "fu540-c000-u-boot.dtsi"
+#include "fu540-hifive-unleashed-a00-sdram-ddr4.dtsi"
 
 / {
 	hfclk {
