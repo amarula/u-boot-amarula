@@ -41,6 +41,10 @@
 #include <linux/clk/analogbits-wrpll-cln28hpc.h>
 #include <dt-bindings/clock/sifive-fu540-prci.h>
 
+#define DDRCTLPLL_F	55
+#define DDRCTLPLL_Q	2
+#define MHz		1000000
+
 /*
  * EXPECTED_CLK_PARENT_COUNT: how many parent clocks this driver expects:
  *     hfclk and rtcclk
@@ -151,6 +155,27 @@
 #define PRCI_CLKMUXSTATUSREG_TLCLKSEL_STATUS_SHIFT 1
 #define PRCI_CLKMUXSTATUSREG_TLCLKSEL_STATUS_MASK \
 			(0x1 << PRCI_CLKMUXSTATUSREG_TLCLKSEL_STATUS_SHIFT)
+
+/* PROCMONCFG */
+#define PRCI_PROCMONCFG_OFFSET			0xF0
+#define PRCI_PROCMONCFG_CORE_CLOCK_SHIFT	24
+#define PRCI_PROCMONCFG_CORE_CLOCK_MASK \
+			(0x1 << PRCI_PROCMONCFG_CORE_CLOCK_SHIFT)
+
+#define PLL_R(x) \
+	((x) << PRCI_DDRPLLCFG0_DIVR_SHIFT) & PRCI_DDRPLLCFG0_DIVR_MASK
+#define PLL_F(x) \
+	((x) << PRCI_DDRPLLCFG0_DIVF_SHIFT) & PRCI_DDRPLLCFG0_DIVF_MASK
+#define PLL_Q(x) \
+	((x) << PRCI_DDRPLLCFG0_DIVQ_SHIFT) & PRCI_DDRPLLCFG0_DIVQ_MASK
+#define PLL_RANGE(x) \
+	((x) << PRCI_DDRPLLCFG0_RANGE_SHIFT) & PRCI_DDRPLLCFG0_RANGE_MASK
+#define PLL_BYPASS(x) \
+	((x) << PRCI_DDRPLLCFG0_BYPASS_SHIFT) & PRCI_DDRPLLCFG0_BYPASS_MASK
+#define PLL_FSE(x) \
+	((x) << PRCI_DDRPLLCFG0_FSE_SHIFT) & PRCI_DDRPLLCFG0_FSE_MASK
+#define PLL_LOCK(x) \
+	((x) << PRCI_DDRPLLCFG0_LOCK_SHIFT) & PRCI_DDRPLLCFG0_LOCK_MASK
 
 /*
  * Private structures
@@ -654,6 +679,93 @@ static int sifive_fu540_prci_disable(struct clk *clk)
 	return pc->ops->enable_clk(pc, 0);
 }
 
+#ifdef CONFIG_SPL_BUILD
+static void corepll_init(struct udevice *dev)
+{
+	u32 v;
+	struct clk clock;
+	struct __prci_data *pd = dev_get_priv(dev);
+
+	v = __prci_readl(pd, PRCI_CLKMUXSTATUSREG_OFFSET);
+	v &= PRCI_CLKMUXSTATUSREG_TLCLKSEL_STATUS_MASK;
+
+	clock.id = PRCI_CLK_COREPLL;
+
+	if (v) {
+		/* corepll 500 Mhz */
+		sifive_fu540_prci_set_rate(&clock, 500UL * MHz);
+	} else {
+		/* corepll 1 Ghz */
+		sifive_fu540_prci_set_rate(&clock, 1000UL * MHz);
+	}
+
+	sifive_fu540_prci_clock_enable(&__prci_init_clocks[clock.id], 1);
+}
+
+static void ddr_init(struct udevice *dev)
+{
+	u32 v;
+	struct clk clock;
+	struct __prci_data *pd = dev_get_priv(dev);
+
+	//DDR init
+	u32 ddrctlmhz =
+		(PLL_R(0)) |
+		(PLL_F(DDRCTLPLL_F)) |
+		(PLL_Q(DDRCTLPLL_Q)) |
+		(PLL_RANGE(0x4)) |
+		(PLL_BYPASS(0)) |
+		(PLL_FSE(1));
+	__prci_writel(ddrctlmhz, PRCI_DDRPLLCFG0_OFFSET, pd);
+
+	clock.id = PRCI_CLK_DDRPLL;
+	sifive_fu540_prci_clock_enable(&__prci_init_clocks[clock.id], 1);
+
+	/* Release DDR reset */
+	v = __prci_readl(pd, PRCI_DEVICESRESETREG_OFFSET);
+	v |= PRCI_DEVICESRESETREG_DDR_CTRL_RST_N_MASK;
+	__prci_writel(v, PRCI_DEVICESRESETREG_OFFSET, pd);
+
+	// HACK to get the '1 full controller clock cycle'.
+	asm volatile ("fence");
+	v = __prci_readl(pd, PRCI_DEVICESRESETREG_OFFSET);
+	v |= (PRCI_DEVICESRESETREG_DDR_AXI_RST_N_MASK |
+	      PRCI_DEVICESRESETREG_DDR_AHB_RST_N_MASK |
+	      PRCI_DEVICESRESETREG_DDR_PHY_RST_N_MASK);
+	__prci_writel(v, PRCI_DEVICESRESETREG_OFFSET, pd);
+	// HACK to get the '1 full controller clock cycle'.
+	asm volatile ("fence");
+
+	/* These take like 16 cycles to actually propagate. We can't go sending
+	 * stuff before they come out of reset. So wait. (TODO: Add a register
+	 * to read the current reset states, or DDR Control device?)
+	 */
+	for (int i = 0; i < 256; i++)
+		asm volatile ("nop");
+}
+
+static void ethernet_init(struct udevice *dev)
+{
+	u32 v;
+	struct clk clock;
+	struct __prci_data *pd = dev_get_priv(dev);
+
+	/* GEMGXL init */
+	clock.id = PRCI_CLK_GEMGXLPLL;
+	sifive_fu540_prci_set_rate(&clock, 125UL * MHz);
+	sifive_fu540_prci_clock_enable(&__prci_init_clocks[clock.id], 1);
+
+	/* Release GEMGXL reset */
+	v = __prci_readl(pd, PRCI_DEVICESRESETREG_OFFSET);
+	v |= PRCI_DEVICESRESETREG_GEMGXL_RST_N_MASK;
+	__prci_writel(v, PRCI_DEVICESRESETREG_OFFSET, pd);
+
+	/* Procmon => core clock */
+	__prci_writel(PRCI_PROCMONCFG_CORE_CLOCK_MASK, PRCI_PROCMONCFG_OFFSET,
+		      pd);
+}
+#endif
+
 static int sifive_fu540_prci_probe(struct udevice *dev)
 {
 	int i, err;
@@ -678,6 +790,12 @@ static int sifive_fu540_prci_probe(struct udevice *dev)
 		if (pc->pwd)
 			__prci_wrpll_read_cfg0(pd, pc->pwd);
 	}
+
+#ifdef CONFIG_SPL_BUILD
+	corepll_init(dev);
+	ddr_init(dev);
+	ethernet_init(dev);
+#endif
 
 	return 0;
 }
