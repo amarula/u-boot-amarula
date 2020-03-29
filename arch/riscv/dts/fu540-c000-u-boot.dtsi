@@ -73,3 +73,7 @@
 &qspi2 {
 	u-boot,dm-spl;
 };
+
+&l2cache {
+	status = "okay";
+};
