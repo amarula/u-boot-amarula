@@ -7,12 +7,24 @@
 #include "fu540-hifive-unleashed-a00-sdram-ddr4.dtsi"
 
 / {
+	aliases {
+		spi0 = &qspi0;
+		spi2 = &qspi2;
+	};
+
 	hfclk {
 		u-boot,dm-spl;
 	};
 
 	rtcclk {
 		u-boot,dm-spl;
+	};
+};
+
+&qspi0 {
+	flash@0 {
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
 	};
 };
 
