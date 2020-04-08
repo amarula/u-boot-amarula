@@ -12,6 +12,10 @@
 		spi2 = &qspi2;
 	};
 
+	config {
+		u-boot,spl-payload-offset = <0x105000>; /* @ 256KB */
+	};
+
 	hfclk {
 		u-boot,dm-spl;
 	};
@@ -22,7 +26,10 @@
 };
 
 &qspi0 {
+	u-boot,dm-spl;
+
 	flash@0 {
+		u-boot,dm-spl;
 		spi-tx-bus-width = <1>;
 		spi-rx-bus-width = <1>;
 	};
