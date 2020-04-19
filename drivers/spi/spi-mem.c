@@ -336,15 +336,18 @@ int spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 	if (msg.actual_length != totalxferlen)
 		return -EIO;
 #else
+	u8 opcode = op->cmd.opcode;
 
-	if (op->data.nbytes) {
-		if (op->data.dir == SPI_MEM_DATA_IN)
-			rx_buf = op->data.buf.in;
-		else
-			tx_buf = op->data.buf.out;
+	flag = SPI_XFER_BEGIN;
+	if (!op->addr.nbytes && !op->dummy.nbytes && !op->data.nbytes)
+		flag |= SPI_XFER_END;
+
+	/* send the opcode */
+	ret = spi_xfer(slave, 8, (void *)&opcode, NULL, flag);
+	if (ret < 0) {
+		dev_err(slave->dev, "failed to xfer opcode\n");
+		return ret;
 	}
-
-	op_len = sizeof(op->cmd.opcode) + op->addr.nbytes + op->dummy.nbytes;
 
 	/*
 	 * Avoid using malloc() here so that we can use this code in SPL where
@@ -355,41 +358,51 @@ int spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 	 * data being sent, only the op-code and address. In fact, it should be
 	 * possible to just use a small fixed value here instead of op_len.
 	 */
+	op_len = op->addr.nbytes + op->dummy.nbytes;
 	u8 op_buf[op_len];
 
-	op_buf[pos++] = op->cmd.opcode;
-
+	/* send the addr + dummy */
 	if (op->addr.nbytes) {
+		/* fill address */
 		for (i = 0; i < op->addr.nbytes; i++)
 			op_buf[pos + i] = op->addr.val >>
 				(8 * (op->addr.nbytes - i - 1));
 
 		pos += op->addr.nbytes;
+
+		/* fill dummy */
+		if (op->dummy.nbytes)
+			memset(op_buf + pos, 0xff, op->dummy.nbytes);
+
+		/* make sure to set end flag, if no data bytes */
+		if (!op->data.nbytes)
+			flag |= SPI_XFER_END;
+
+		ret = spi_xfer(slave, op_len * 8, op_buf, NULL, flag);
+		if (ret < 0) {
+			dev_err(slave->dev, "failed to xfer addr + dummy\n");
+			return ret;
+		}
 	}
 
-	if (op->dummy.nbytes)
-		memset(op_buf + pos, 0xff, op->dummy.nbytes);
+	/* send/received the data */
+	if (op->data.nbytes) {
+		if (op->data.dir == SPI_MEM_DATA_IN)
+			rx_buf = op->data.buf.in;
+		else
+			tx_buf = op->data.buf.out;
 
-	/* 1st transfer: opcode + address + dummy cycles */
-	flag = SPI_XFER_BEGIN;
-	/* Make sure to set END bit if no tx or rx data messages follow */
-	if (!tx_buf && !rx_buf)
-		flag |= SPI_XFER_END;
-
-	ret = spi_xfer(slave, op_len * 8, op_buf, NULL, flag);
-	if (ret)
-		return ret;
-
-	/* 2nd transfer: rx or tx data path */
-	if (tx_buf || rx_buf) {
-		ret = spi_xfer(slave, op->data.nbytes * 8, tx_buf,
-			       rx_buf, SPI_XFER_END);
-		if (ret)
+		ret = spi_xfer(slave, op->data.nbytes * 8, tx_buf, rx_buf,
+			       SPI_XFER_END);
+		if (ret) {
+			dev_err(slave->dev, "failed to xfer data\n");
 			return ret;
+		}
 	}
 
 	spi_release_bus(slave);
 
+	debug("%02x ", op->cmd.opcode);
 	for (i = 0; i < pos; i++)
 		debug("%02x ", op_buf[i]);
 	debug("| [%dB %s] ",
