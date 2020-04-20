@@ -337,6 +337,7 @@ int spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 		return -EIO;
 #else
 	u8 opcode = op->cmd.opcode;
+	slave->proto = op->cmd.buswidth;
 
 	flag = SPI_XFER_BEGIN;
 	if (!op->addr.nbytes && !op->dummy.nbytes && !op->data.nbytes)
@@ -378,6 +379,8 @@ int spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 		if (!op->data.nbytes)
 			flag |= SPI_XFER_END;
 
+		slave->proto = op->addr.buswidth;
+
 		ret = spi_xfer(slave, op_len * 8, op_buf, NULL, flag);
 		if (ret < 0) {
 			dev_err(slave->dev, "failed to xfer addr + dummy\n");
@@ -391,6 +394,8 @@ int spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 			rx_buf = op->data.buf.in;
 		else
 			tx_buf = op->data.buf.out;
+
+		slave->proto = op->data.buswidth;
 
 		ret = spi_xfer(slave, op->data.nbytes * 8, tx_buf, rx_buf,
 			       SPI_XFER_END);

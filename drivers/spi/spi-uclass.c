@@ -86,11 +86,18 @@ int dm_spi_xfer(struct udevice *dev, unsigned int bitlen,
 {
 	struct udevice *bus = dev->parent;
 	struct dm_spi_ops *ops = spi_get_ops(bus);
+	struct dm_spi_slave_platdata *plat = dev_get_parent_platdata(dev);
+	struct spi_slave *slave = dev_get_parent_priv(dev);
 
 	if (bus->uclass->uc_drv->id != UCLASS_SPI)
 		return -EOPNOTSUPP;
 	if (!ops->xfer)
 		return -ENOSYS;
+
+	if (!slave->proto)
+		plat->proto = SPI_PROTO_SINGLE;
+	else
+		plat->proto = slave->proto;
 
 	return ops->xfer(dev, bitlen, dout, din, flags);
 }

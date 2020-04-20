@@ -57,11 +57,14 @@ struct dm_spi_bus {
  * @cs:		Chip select number (0..n-1)
  * @max_hz:	Maximum bus speed that this slave can tolerate
  * @mode:	SPI mode to use for this device (see SPI mode flags)
+ * @proto:	Number of IO protocol lines used for writing or reading.
+ *		If 0 then the default SPI_PROTO_SINGLE is used.
  */
 struct dm_spi_slave_platdata {
 	unsigned int cs;
 	uint max_hz;
 	uint mode;
+	uint proto;
 };
 
 #endif /* CONFIG_DM_SPI */
@@ -83,6 +86,8 @@ struct dm_spi_slave_platdata {
  * @max_hz:		Maximum speed for this slave
  * @speed:		Current bus speed. This is 0 until the bus is first
  *			claimed.
+ * @proto:		Number of IO protocol lines used for writing or reading.
+ *			If 0 then the default SPI_PROTO_SINGLE is used.
  * @bus:		ID of the bus that the slave is attached to. For
  *			driver model this is the sequence number of the SPI
  *			bus (bus->seq) so does not need to be stored
@@ -101,6 +106,10 @@ struct spi_slave {
 	struct udevice *dev;	/* struct spi_slave is dev->parentdata */
 	uint max_hz;
 	uint speed;
+	uint proto;
+#define SPI_PROTO_QUAD		4 /* 4 lines I/O protocol transfer */
+#define SPI_PROTO_DUAL		2 /* 2 lines I/O protocol transfer */
+#define SPI_PROTO_SINGLE	1 /* 1 line I/O protocol transfer */
 #else
 	unsigned int bus;
 	unsigned int cs;
