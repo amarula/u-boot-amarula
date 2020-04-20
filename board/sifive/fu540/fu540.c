@@ -130,6 +130,9 @@ void board_boot_order(u32 *spl_boot_list)
 #ifdef CONFIG_SPL_MMC_SUPPORT
 		BOOT_DEVICE_MMC1,
 #endif
+#ifdef CONFIG_SPL_SPI_LOAD
+		BOOT_DEVICE_SPI,
+#endif
 	};
 
 	for (i = 0; i < ARRAY_SIZE(boot_devices); i++)

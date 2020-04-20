@@ -391,3 +391,46 @@ Program the SD card
 Change DIP switches MSEL[3:0] are set to 1011
 
 Insert the SD card and power up the board.
+
+Booting from SPI
+----------------
+
+Use steps from "Building" section for building the U-Boot
+
+.. code-block:: none
+
+   export ARCH=riscv
+   export CROSS_COMPILE=<riscv64 toolchain prefix>
+   make sifive_fu540_spi_defconfig
+   make
+
+Partition the SPI in Linux via mtdblock. (Require to boot
+the board in SD boot mode by enabling MTD block in Linux)
+
+.. code-block:: none
+
+  # sgdisk --clear \
+  > --set-alignment=2 \
+  > --new=1:40:2087 --change-name=1:loader1 --typecode=1:5B193300-FC78-40CD-8002-E86C45580B47 \
+  > --new=2:2088:10279 --change-name=2:loader2 --typecode=2:2E54B353-1271-4842-806F-E436D6AF6985 \
+  > --new=3:10536:65494 --change-name=3:rootfs --typecode=3:0FC63DAF-8483-4772-8E79-3D69D8477DE4 \
+  > /dev/mtdblock0
+
+Program the SPI (Require to boot the board in SD boot mode)
+on U-Boot proper.
+
+.. code-block:: none
+
+  sf erase 0x5000 0x100000
+  tftpboot $kernel_addr_r u-boot-spl.bin
+  sf write $kernel_addr_r 0x5000 $filesize
+
+  sf erase 0x105000 0x100000
+  tftpboot $kernel_addr_r u-boot.itb
+  sf write $kernel_addr_r 0x105000 $filesize
+
+Power off the board
+
+Change DIP switches MSEL[3:0] are set to 0110
+
+Power up the board.
