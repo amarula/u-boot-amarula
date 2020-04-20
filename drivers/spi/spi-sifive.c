@@ -146,12 +146,17 @@ static void sifive_spi_prep_transfer(struct sifive_spi *spi,
 
 	/* Number of wires ? */
 	cr &= ~SIFIVE_SPI_FMT_PROTO_MASK;
-	if ((slave_plat->mode & SPI_TX_QUAD) || (slave_plat->mode & SPI_RX_QUAD))
+	switch (slave_plat->proto) {
+	case SPI_PROTO_QUAD:
 		cr |= SIFIVE_SPI_FMT_PROTO_QUAD;
-	else if ((slave_plat->mode & SPI_TX_DUAL) || (slave_plat->mode & SPI_RX_DUAL))
+		break;
+	case SPI_PROTO_DUAL:
 		cr |= SIFIVE_SPI_FMT_PROTO_DUAL;
-	else
+		break;
+	default:
 		cr |= SIFIVE_SPI_FMT_PROTO_SINGLE;
+		break;
+	}
 
 	/* SPI direction in/out ? */
 	cr &= ~SIFIVE_SPI_FMT_DIR;
