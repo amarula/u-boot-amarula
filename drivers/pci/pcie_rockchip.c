@@ -9,6 +9,7 @@
 #include <pci.h>
 #include <generic-phy.h>
 #include <power-domain.h>
+#include <power/regulator.h>
 #include <regmap.h>
 #include <reset.h>
 #include <syscon.h>
@@ -47,6 +48,9 @@ DECLARE_GLOBAL_DATA_PTR;
 #define  PCIE_LM_RCBARPIS		(1 << 20)
 
 #define PCIE_RC_BASE			0xa00000
+#define PCIE_RC_CONFIG_DCR		(PCIE_RC_BASE + 0x0c4)
+#define PCIE_RC_CONFIG_DCR_CSPL_SHIFT	18
+#define PCIE_RC_CONFIG_DCR_CPLS_SHIFT	26
 #define PCIE_RC_PCIE_LCAP		(PCIE_RC_BASE + 0x0cc)
 #define  PCIE_RC_PCIE_LCAP_APMS_L0S	(1 << 10)
 
@@ -207,8 +211,13 @@ static int pcie_rockchip_write_config(struct udevice *bus, pci_dev_t bdf,
 
 static int pcie_rockchip_phy_init(struct pcie_rockchip *pci)
 {
-	if (reset_get_by_index_nodev(pci->phy_node, 0, &pci->phy_ctl))
+	int ret;
+
+	ret = reset_get_by_index_nodev(pci->phy_node, 0, &pci->phy_ctl);
+	if (ret) {
+		printf("%s: phy_ctl not found\n", __func__);
 		return -EINVAL;
+	}
 
 	/* XXX clock enable refclk */
 	reset_assert(&pci->phy_ctl);
@@ -365,6 +374,7 @@ static int pcie_rockchip_probe(struct udevice *dev)
 	struct pci_controller *hose = dev_get_uclass_priv(ctlr);
 	int timo;
 	u32 val;
+	int ret;
 
 	pci->first_busno = dev->seq;
 	pci->dev = dev;
@@ -372,7 +382,7 @@ static int pcie_rockchip_probe(struct udevice *dev)
 	gpio_request_by_name(dev, "ep-gpios", 0, &pci->ep_gpio,
 			     GPIOD_IS_OUT);
 	if (!dm_gpio_is_valid(&pci->ep_gpio)) {
-		dev_err(dev, "failed to get EP gpio\n");
+		printf("failed to get EP gpio\n");
 		return -ENODEV;
 	}
 
@@ -383,9 +393,42 @@ static int pcie_rockchip_probe(struct udevice *dev)
 	    reset_get_by_name(dev, "pclk", &pci->pclk_ctl) ||
 	    reset_get_by_name(dev, "pipe", &pci->pipe_ctl) ||
 	    reset_get_by_name(dev, "pm", &pci->pm_ctl)) {
-		dev_err(dev, "failed to get resets\n");
+		printf("failed to get resets\n");
 		return -ENODEV;
 	}
+
+#if 0
+	struct udevice *vpcie3v3;
+	struct udevice *vpcie0v9;
+	struct udevice *vpcie1v8;
+
+	ret = device_get_supply_regulator(dev, "vpcie3v3-supply", &vpcie3v3);
+	if (ret) {
+		printf("No vpcie3v3 regulator(ret=%d)\n", ret);
+	} else {
+		ret = regulator_set_enable(vpcie3v3, true);
+		if (ret)
+			printf("failed to enable vpcie3v3\n");
+	}
+
+	ret = device_get_supply_regulator(dev, "vpcie1v8-supply", &vpcie1v8);
+	if (ret) {
+		printf("no vpcie1v8 regulator(ret=%d)\n", ret);
+	} else {
+		ret = regulator_set_enable(vpcie1v8, true);
+		if (ret)
+			printf("failed to enable vpcie1v8\n");
+	}
+
+	ret = device_get_supply_regulator(dev, "vpcie0v9-supply", &vpcie0v9);
+	if (ret) {
+		printf("no vpcie0v9 regulator(ret=%d)\n", ret);
+	} else {
+		ret = regulator_set_enable(vpcie0v9, true);
+		if (ret)
+			printf("failed to enable vpcie0v9\n");
+	}
+#endif
 
 	dm_gpio_set_value(&pci->ep_gpio, 0);
 
@@ -418,7 +461,7 @@ static int pcie_rockchip_probe(struct udevice *dev)
 	    pci->apb_base + PCIE_CLIENT_BASIC_STRAP_CONF);
 
 	if (pcie_rockchip_phy_poweron(pci)) {
-		printf("PCIE-%d: Link down\n", dev->seq);
+		printf("PCIE-%d: Power down\n", dev->seq);
 		return -ENODEV;
 	}
 
@@ -426,11 +469,43 @@ static int pcie_rockchip_probe(struct udevice *dev)
 	reset_deassert(&pci->mgmt_ctl);
 	reset_deassert(&pci->mgmt_sticky_ctl);
 	reset_deassert(&pci->pipe_ctl);
-
+#if 1
 	/* Start link training. */
 	writel(PCIE_CLIENT_LINK_TRAIN_EN,
 	    pci->apb_base + PCIE_CLIENT_BASIC_STRAP_CONF);
+	printf("++apb_base 0x%x\n", readl(pci->apb_base+PCIE_CLIENT_BASIC_STRAP_CONF));
+#else
+	writel((readl(pci->apb_base + PCIE_CLIENT_BASIC_STRAP_CONF) | 0x6B),
+		pci->apb_base + PCIE_CLIENT_BASIC_STRAP_CONF);
+#endif
+#if 0
+	int curr;
+	u32 status, scale, power;
 
+	curr = regulator_get_current(vpcie3v3);
+	if (curr <= 0) {
+		printf("not curr %d\n", curr);
+		return -EINVAL;
+	}
+
+	printf("curr = %d\n", curr);
+	scale = 3; /* 0.001x */
+        curr = curr / 1000; /* convert to mA */
+        power = (curr * 3300) / 1000; /* milliwatt */
+	while (power > 0xff) {
+                if (!scale) {
+                        printf("invalid power supply\n");
+                        return -EINVAL;
+                }
+                scale--;
+                power = power / 10;
+        }
+
+	status = readl(pci->apb_base + PCIE_RC_CONFIG_DCR);
+	status |= (power << PCIE_RC_CONFIG_DCR_CSPL_SHIFT) |
+		  (scale << PCIE_RC_CONFIG_DCR_CPLS_SHIFT);
+	writel(status, pci->apb_base + PCIE_RC_CONFIG_DCR);
+#endif
 	/* XXX Advertise power limits? */
 
 	dm_gpio_set_value(&pci->ep_gpio, 1);
@@ -442,7 +517,7 @@ static int pcie_rockchip_probe(struct udevice *dev)
 		udelay(1000);
 	}
 	if (timo == 0) {
-		printf("PCIE-%d: Link down\n", dev->seq);
+		printf("PCIE-%d: PCIe link training gen1 timeout!\n", dev->seq);
 		return -ENODEV;
 	}
 

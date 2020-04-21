@@ -11,6 +11,10 @@
 		u-boot,spl-boot-order = &sdhci, &sdmmc;
 	};
 
+	config {
+                pcie-pwr-gpio = <&gpio2 RK_PD2 GPIO_ACTIVE_HIGH>;
+        };
+
 	vdd_log: vdd-log {
 		compatible = "pwm-regulator";
 		pwms = <&pwm2 0 25000 1>;
