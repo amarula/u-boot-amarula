@@ -18,4 +18,11 @@ config PHY_ROCKCHIP_TYPEC
 	help
 	  Enable this to support the Rockchip USB TYPEC PHY.
 
+config PHY_ROCKCHIP_PCIE
+	bool "Rockchip PCIe PHY Driver"
+	depends on ARCH_ROCKCHIP
+	select PHY
+	help
+	  Enable this to support the Rockchip PCIe PHY.
+
 endmenu
