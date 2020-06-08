@@ -279,6 +279,8 @@ void spl_board_init(void)
 {
 	/* board specific spl init */
 	rk_spl_board_init();
+
+	preloader_console_init();
 }
 
 #endif

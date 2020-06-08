@@ -147,7 +147,6 @@ void board_init_f(ulong dummy)
 	gd->ram_top = gd->ram_base + get_effective_memsize();
 	gd->ram_top = board_get_usable_ram_top(gd->ram_size);
 #endif
-	preloader_console_init();
 }
 
 #ifdef CONFIG_SPL_LOAD_FIT
