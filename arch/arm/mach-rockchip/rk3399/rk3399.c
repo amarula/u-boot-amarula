@@ -241,7 +241,7 @@ static void rk3399_force_power_on_reset(void)
 }
 #endif
 
-void spl_board_init(void)
+__weak void rk_spl_board_init(void)
 {
 #if defined(SPL_GPIO_SUPPORT)
 	struct rockchip_cru *cru = rockchip_get_cru();
@@ -274,4 +274,11 @@ void spl_board_init(void)
 		debug("%s: Cannot enable boot on regulator\n", __func__);
 #endif
 }
+
+void spl_board_init(void)
+{
+	/* board specific spl init */
+	rk_spl_board_init();
+}
+
 #endif
