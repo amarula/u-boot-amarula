@@ -12,6 +12,10 @@
 / {
 	compatible = "vamrs,rk3288-vmarc-som", "rockchip,rk3288";
 
+	chosen {
+                stdout-path = &uart2;
+        };
+
 	vccio_flash: vccio-flash-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vccio_flash";
