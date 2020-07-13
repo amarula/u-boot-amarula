@@ -26,7 +26,9 @@ static void _back_to_bootrom(enum rockchip_bootrom_cmd brom_cmd)
 void back_to_bootrom(enum rockchip_bootrom_cmd brom_cmd)
 {
 #if CONFIG_IS_ENABLED(LIBCOMMON_SUPPORT)
+#ifndef CONFIG_TPL_BUILD
 	puts("Returning to boot ROM...\n");
+#endif
 #endif
 	_back_to_bootrom(brom_cmd);
 }

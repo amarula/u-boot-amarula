@@ -553,10 +553,13 @@ static int boot_from_devices(struct spl_image_info *spl_image,
 
 		loader = spl_ll_find_loader(spl_boot_list[i]);
 #if defined(CONFIG_SPL_SERIAL_SUPPORT) && defined(CONFIG_SPL_LIBCOMMON_SUPPORT)
-		if (loader)
+		if (loader) {
+#ifndef CONFIG_TPL_BUILD
 			printf("Trying to boot from %s\n", loader->name);
-		else
+#endif
+		} else {
 			puts(SPL_TPL_PROMPT "Unsupported Boot Device!\n");
+		}
 #endif
 		if (loader && !spl_load_image(spl_image, loader)) {
 			spl_image->boot_device = spl_boot_list[i];
