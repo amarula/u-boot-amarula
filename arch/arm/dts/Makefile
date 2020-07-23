@@ -71,7 +71,8 @@ dtb-$(CONFIG_MACH_S700) += \
 
 dtb-$(CONFIG_ROCKCHIP_PX30) += \
 	px30-evb.dtb \
-	px30-firefly.dtb
+	px30-firefly.dtb \
+	px30-px30-core-edimm2.2.dtb
 
 dtb-$(CONFIG_ROCKCHIP_RK3036) += \
 	rk3036-sdk.dtb
