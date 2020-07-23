@@ -5,3 +5,9 @@ F:      board/rockchip/evb_px30
 F:      include/configs/evb_px30.h
 F:      configs/evb-px30_defconfig
 F:      configs/firefly-px30_defconfig
+
+PX30-Core-EDIMM2.2
+M:	Jagan Teki <jagan@amarulasolutions.com>
+M:	Suniel Mahesh <sunil@amarulasolutions.com>
+S:	Maintained
+F:	configs/px30-core-edimm2.2-px30_defconfig

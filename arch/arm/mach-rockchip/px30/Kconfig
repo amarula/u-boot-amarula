@@ -8,6 +8,12 @@ config TARGET_EVB_PX30
 	  EVB_PX30:
 	  * EVB_PX30 is an evaluation board for Rockchip PX30.
 
+	  PX30.Core EDIMM2.2:
+	  * PX30.Core is an EDIMM SOM based on Rockchip PX30 from Engicam.
+	  * EDIMM2.2 is a Form Factor Capacitive Evaluation Board from Engicam.
+	  * PX30.Core needs to mount on top of EDIMM2.2 for creating complete
+	    PX30.Core EDIMM2.2 Starter Kit.
+
 config TARGET_ODROID_GO2
 	bool "ODROID_GO2"
 
