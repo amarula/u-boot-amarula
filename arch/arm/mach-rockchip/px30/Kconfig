@@ -14,6 +14,13 @@ config TARGET_EVB_PX30
 	  * PX30.Core needs to mount on top of EDIMM2.2 for creating complete
 	    PX30.Core EDIMM2.2 Starter Kit.
 
+	  PX30.Core CTOUCH2 OF10:
+	  * PX30.Core is an EDIMM SOM based on Rockchip PX30 from Engicam.
+	  * CTOUCH2 OF 10 is a Carrier board with Capacitive touch 10.1"
+	    Open frame from Engicam.
+	  * PX30.Core needs to mount on top of CTOUCH2 OF10 for creating complete
+	    PX30.Core C.TOUCH 2.0 10.1\" Open Frame.
+
 config ROCKCHIP_BOOT_MODE_REG
 	default 0xff010200
 
