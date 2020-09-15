@@ -125,7 +125,8 @@ u32 addrmap[][8] = {
 struct dram_info dram_info;
 
 struct px30_sdram_params sdram_configs[] = {
-#include	"sdram-px30-ddr3-detect-333.inc"
+//#include	"sdram-px30-ddr3-detect-333.inc"
+#include	"sdram-px30-ddr4-detect-333.inc"
 };
 
 struct ddr_phy_skew skew = {
