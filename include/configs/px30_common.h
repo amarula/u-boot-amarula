@@ -36,6 +36,11 @@
 #define SDRAM_MAX_SIZE			0xff000000
 #define SDRAM_BANK_SIZE			(2UL << 30)
 
+/* USB 1.1 configuration */
+
+#define CONFIG_USB_OHCI_NEW
+#define CONFIG_SYS_USB_OHCI_MAX_ROOT_PORTS	1
+
 #ifndef CONFIG_SPL_BUILD
 
 #define ENV_MEM_LAYOUT_SETTINGS \
